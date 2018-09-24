@@ -6,10 +6,16 @@
   "scripts": {
     "start": "tsc --watch",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
+  "files": [
+    "lib"
+  ],
   "repository": "pd4d10/prettier-plugin-thrift",
-  "keywords": [],
+  "keywords": [
+    "pretter",
+    "thrift"
+  ],
   "author": "Rongjian Zhang <pd4d10@gmail.com>",
   "license": "MIT",
   "peerDependencies": {
@@ -20,6 +26,8 @@
   },
   "devDependencies": {
     "@types/prettier": "^1.13.2",
-    "prettier": "^1.14.3"
+    "jest": "^23.6.0",
+    "prettier": "^1.14.3",
+    "typescript": "^3.0.3"
   }
 }

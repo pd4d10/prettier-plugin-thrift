@@ -1,16 +1,16 @@
-import * as thriftParser from "@creditkarma/thrift-parser";
+import { parse as thriftParse, SyntaxNode } from "@creditkarma/thrift-parser";
 
-function parse(text: string, parsers, options) {
-  return thriftParser.parse(text);
+function parse(text: string, parsers: any, options: any) {
+  return thriftParse(text);
 }
 
 // function hasPragma(text) {}
 
-function locStart(node) {
+function locStart(node: SyntaxNode) {
   return node.loc.start.index;
 }
 
-function locEnd(node) {
+function locEnd(node: SyntaxNode) {
   return node.loc.end.index;
 }
 
