@@ -100,3 +100,42 @@ struct Xtruct3
   9:  i32    i32_thing,
   11: i64    i64_thing
 }
+
+
+struct Insanity
+{
+  1: map<Numberz, UserId> userMap,
+  2: list<Xtruct> xtructs
+} (python.immutable= "")
+
+struct CrazyNesting {
+  1: string string_field,
+  2: optional set<Insanity> set_field,
+  // Do not insert line break as test/go/Makefile.am is removing this line with pattern match
+  3: required list<map<set<i32> (python.immutable = ""), map<i32,set<list<map<Insanity,string>(python.immutable = "")> (python.immutable = "")>>>> list_field,
+  4: binary binary_field
+}
+
+union SomeUnion {
+  1: map<Numberz, UserId> map_thing,
+  2: string string_thing,
+  3: i32 i32_thing,
+  4: Xtruct3 xtruct_thing,
+  5: Insanity insanity_thing
+}
+
+exception Xception {
+  1: i32 errorCode,
+  2: string message
+}
+
+exception Xception2 {
+  1: i32 errorCode,
+  2: Xtruct struct_thing
+}
+
+struct EmptyStruct {}
+
+struct OneField {
+  1: EmptyStruct field
+}
