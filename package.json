@@ -1,0 +1,25 @@
+{
+  "name": "prettier-plugin-thrift",
+  "version": "0.0.1",
+  "description": "",
+  "main": "lib/index.js",
+  "scripts": {
+    "start": "tsc --watch",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "pd4d10/prettier-plugin-thrift",
+  "keywords": [],
+  "author": "Rongjian Zhang <pd4d10@gmail.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "prettier": "^1.14.3"
+  },
+  "dependencies": {
+    "@creditkarma/thrift-parser": "^1.1.4"
+  },
+  "devDependencies": {
+    "@types/prettier": "^1.13.2",
+    "prettier": "^1.14.3"
+  }
+}
