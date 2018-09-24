@@ -16,7 +16,8 @@ import {
   Annotation,
   UnionDefinition,
   CommentBlock,
-  CommentLine
+  CommentLine,
+  FunctionType
 } from "@creditkarma/thrift-parser";
 const { concat, join, hardline, fill, indent } = prettier.doc.builders;
 const space = " ";
@@ -24,29 +25,33 @@ const empty = "";
 
 type Print = (path: FastPath) => Doc;
 
-function printDocument(path: FastPath, p: Print) {
-  return join(hardline, path.map(p, "body"));
+function printDocument(path: FastPath, print: Print) {
+  return join(hardline, path.map(print, "body"));
 }
 
-function printNamespace(node: NamespaceDefinition, path: FastPath, p: Print) {
+function printNamespace(
+  node: NamespaceDefinition,
+  path: FastPath,
+  print: Print
+) {
   return join(hardline, [
-    ...path.map(p, "comments"),
+    ...path.map(print, "comments"),
     join(space, ["namespace", node.scope.value, node.name.value])
   ]);
 }
 
-function printInclude(node: IncludeDefinition, path: FastPath, p: Print) {
+function printInclude(node: IncludeDefinition, path: FastPath, print: Print) {
   return join(hardline, [
-    ...path.map(p, "comments"),
+    ...path.map(print, "comments"),
     join(space, ["include", node.path.value])
   ]);
 }
 
-function printEnum(node: EnumDefinition, path: FastPath, p: Print) {
+function printEnum(node: EnumDefinition, path: FastPath, print: Print) {
   return join(hardline, [
-    ...path.map(p, "comments"),
+    ...path.map(print, "comments"),
     join(space, ["enum", node.name.value, "{"]),
-    ...path.map(p, "members"),
+    ...path.map(print, "members"),
     "}"
   ]);
 }
@@ -69,7 +74,7 @@ function printTypedef(node: TypedefDefinition) {
 
 // https://thrift.apache.org/docs/idl#types
 // TODO: Annotations
-function getTextByFieldType(node: FieldType): Doc {
+function getTextByFieldType(node: FunctionType): Doc {
   switch (node.type) {
     case SyntaxType.BoolKeyword:
       return "bool";
@@ -103,6 +108,8 @@ function getTextByFieldType(node: FieldType): Doc {
       return join(empty, ["set<", getTextByFieldType(node.valueType), ">"]);
     case SyntaxType.Identifier:
       return node.value;
+    case SyntaxType.VoidKeyword:
+      return "void";
     default:
       console.error(node);
       throw new Error("invalid type");
@@ -131,14 +138,14 @@ function printConst(node: ConstDefinition) {
   return join(space, ["const", type, node.name.value, "=", initialValue]);
 }
 
-function printStruct(node: StructDefinition, path: FastPath, p: Print) {
+function printStruct(node: StructDefinition, path: FastPath, print: Print) {
   let end: Doc = "}";
   if (node.annotations) {
     end = join(space, [
       end,
       join(empty, [
         "(",
-        join(", ", path.map(p, "annotations", "annotations")),
+        join(", ", path.map(print, "annotations", "annotations")),
         ")"
       ])
     ]);
@@ -150,7 +157,7 @@ function printStruct(node: StructDefinition, path: FastPath, p: Print) {
     [SyntaxType.ExceptionDefinition]: "exception"
   }[node.type];
 
-  const fields = path.map(p, "fields");
+  const fields = path.map(print, "fields");
   const seperator = fields.length ? hardline : empty; // Empty struct
 
   return join(seperator, [
@@ -160,7 +167,7 @@ function printStruct(node: StructDefinition, path: FastPath, p: Print) {
   ]);
 }
 
-function printStructField(node: FieldDefinition) {
+function printField(node: FieldDefinition, path: FastPath, print: Print) {
   let result: Doc = node.fieldID.value + ":";
   if (node.requiredness) {
     // TODO: union
@@ -182,15 +189,28 @@ function printAnnotation(node: Annotation) {
   return result;
 }
 
-function printService(node: ServiceDefinition, path: FastPath, p: Print) {
+function printService(node: ServiceDefinition, path: FastPath, print: Print) {
   return join(hardline, [
     join(space, ["service", node.name.value, "{"]),
-    ...path.map(p, "functions"),
+    ...path.map(print, "functions"),
     "}"
   ]);
 }
 
-function printFunction(node: FunctionDefinition) {}
+function printFunction(node: FunctionDefinition, path: FastPath, print: Print) {
+  return join(hardline, [
+    ...path.map(print, "comments"),
+    join(space, [
+      getTextByFieldType(node.returnType),
+      join(empty, [
+        node.name.value,
+        "(",
+        join(space, path.map(print, "fields")),
+        ")"
+      ])
+    ])
+  ]);
+}
 
 function printCommentBlock(node: CommentBlock) {
   return join(hardline, ["/*", " * ", join("\n *", node.value), " */"]);
@@ -200,20 +220,20 @@ function printCommentLine(node: CommentLine) {
   return join(space, ["//", node.value]);
 }
 
-function print(path: FastPath, options: any, p: Print) {
+function printEntry(path: FastPath, options: any, print: Print) {
   // console.log(path);
   const node = path.getValue();
   // console.log(node);
 
   switch (node.type) {
     case SyntaxType.ThriftDocument:
-      return printDocument(path, p);
+      return printDocument(path, print);
     case SyntaxType.NamespaceDefinition:
-      return printNamespace(node, path, p);
+      return printNamespace(node, path, print);
     case SyntaxType.IncludeDefinition:
-      return printInclude(node, path, p);
+      return printInclude(node, path, print);
     case SyntaxType.EnumDefinition:
-      return printEnum(node, path, p);
+      return printEnum(node, path, print);
     case SyntaxType.EnumMember:
       return printEnumMember(node);
     case SyntaxType.TypedefDefinition:
@@ -225,17 +245,17 @@ function print(path: FastPath, options: any, p: Print) {
     case SyntaxType.StructDefinition:
     case SyntaxType.UnionDefinition:
     case SyntaxType.ExceptionDefinition:
-      return printStruct(node, path, p);
+      return printStruct(node, path, print);
     case SyntaxType.FieldDefinition:
-      return printStructField(node);
+      return printField(node, path, print);
 
     case SyntaxType.Annotation:
       return printAnnotation(node);
 
     case SyntaxType.ServiceDefinition:
-      return printService(node, path, p);
+      return printService(node, path, print);
     case SyntaxType.FunctionDefinition:
-      return printFunction(node);
+      return printFunction(node, path, print);
 
     case SyntaxType.CommentBlock:
       return printCommentBlock(node);
@@ -257,7 +277,7 @@ function insertPragma(text: string) {
 
 export const printers = {
   "thrift-ast": {
-    print,
+    print: printEntry,
     embed,
     insertPragma
   }
