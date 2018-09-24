@@ -14,7 +14,9 @@ import {
   EnumMember,
   TypedefDefinition,
   Annotation,
-  UnionDefinition
+  UnionDefinition,
+  CommentBlock,
+  CommentLine
 } from "@creditkarma/thrift-parser";
 const { concat, join, hardline, fill, indent } = prettier.doc.builders;
 const space = " ";
@@ -26,16 +28,23 @@ function printDocument(path: FastPath, p: Print) {
   return join(hardline, path.map(p, "body"));
 }
 
-function printNamespace(node: NamespaceDefinition) {
-  return join(space, ["namespace", node.scope.value, node.name.value]);
+function printNamespace(node: NamespaceDefinition, path: FastPath, p: Print) {
+  return join(hardline, [
+    ...path.map(p, "comments"),
+    join(space, ["namespace", node.scope.value, node.name.value])
+  ]);
 }
 
-function printInclude(node: IncludeDefinition) {
-  return join(space, ["include", node.path.value]);
+function printInclude(node: IncludeDefinition, path: FastPath, p: Print) {
+  return join(hardline, [
+    ...path.map(p, "comments"),
+    join(space, ["include", node.path.value])
+  ]);
 }
 
 function printEnum(node: EnumDefinition, path: FastPath, p: Print) {
   return join(hardline, [
+    ...path.map(p, "comments"),
     join(space, ["enum", node.name.value, "{"]),
     ...path.map(p, "members"),
     "}"
@@ -183,6 +192,14 @@ function printService(node: ServiceDefinition, path: FastPath, p: Print) {
 
 function printFunction(node: FunctionDefinition) {}
 
+function printCommentBlock(node: CommentBlock) {
+  return join(hardline, ["/*", " * ", join("\n *", node.value), " */"]);
+}
+
+function printCommentLine(node: CommentLine) {
+  return join(space, ["//", node.value]);
+}
+
 function print(path: FastPath, options: any, p: Print) {
   // console.log(path);
   const node = path.getValue();
@@ -192,9 +209,9 @@ function print(path: FastPath, options: any, p: Print) {
     case SyntaxType.ThriftDocument:
       return printDocument(path, p);
     case SyntaxType.NamespaceDefinition:
-      return printNamespace(node);
+      return printNamespace(node, path, p);
     case SyntaxType.IncludeDefinition:
-      return printInclude(node);
+      return printInclude(node, path, p);
     case SyntaxType.EnumDefinition:
       return printEnum(node, path, p);
     case SyntaxType.EnumMember:
@@ -219,6 +236,11 @@ function print(path: FastPath, options: any, p: Print) {
       return printService(node, path, p);
     case SyntaxType.FunctionDefinition:
       return printFunction(node);
+
+    case SyntaxType.CommentBlock:
+      return printCommentBlock(node);
+    case SyntaxType.CommentLine:
+      return printCommentLine(node);
 
     default:
       throw new Error("invalid type: " + node.type);
