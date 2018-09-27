@@ -19,14 +19,14 @@ import {
   CommentLine,
   FunctionType
 } from "@creditkarma/thrift-parser";
-const { concat, join, hardline, fill, indent } = prettier.doc.builders;
+const { concat, join, hardline, indent } = prettier.doc.builders;
 const space = " ";
 const empty = "";
 
 type Print = (path: FastPath) => Doc;
 
 function printDocument(path: FastPath, print: Print) {
-  return join(hardline, path.map(print, "body"));
+  return join(concat([hardline, hardline]), path.map(print, "body"));
 }
 
 function printNamespace(
@@ -43,7 +43,7 @@ function printNamespace(
 function printInclude(node: IncludeDefinition, path: FastPath, print: Print) {
   return join(hardline, [
     ...path.map(print, "comments"),
-    join(space, ["include", node.path.value])
+    join(space, ["include", concat(['"', node.path.value, '"'])])
   ]);
 }
 
@@ -173,12 +173,9 @@ function printField(node: FieldDefinition, path: FastPath, print: Print) {
     // TODO: union
     result = join(space, [result, node.requiredness]);
   }
-  result = join(space, [
-    result,
-    getTextByFieldType(node.fieldType),
-    node.name.value
-  ]);
-  return indent(result);
+  return indent(
+    join(space, [result, getTextByFieldType(node.fieldType), node.name.value])
+  );
 }
 
 function printAnnotation(node: Annotation) {
@@ -213,7 +210,7 @@ function printFunction(node: FunctionDefinition, path: FastPath, print: Print) {
 }
 
 function printCommentBlock(node: CommentBlock) {
-  return join(hardline, ["/*", " * ", join("\n *", node.value), " */"]);
+  return node.rawValue;
 }
 
 function printCommentLine(node: CommentLine) {
