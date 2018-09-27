@@ -7,7 +7,12 @@ const url =
 const prefix = "https://raw.githubusercontent.com/apache/thrift/master/test/";
 
 async function main() {
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    // add token if API rate limit exceeded
+    headers: {
+      // Authorization: "token "
+    }
+  });
   const { tree } = await res.json();
 
   tree
@@ -15,15 +20,13 @@ async function main() {
     .filter(p => p.endsWith(".thrift"))
     .forEach(async file => {
       const res = await fetch(prefix + file);
-      res.body
-        .pipe(
-          fs.createWriteStream(
-            path.resolve(__dirname, "../test/fixtures", file)
-          )
-        )
-        .on("finish", () => {
-          console.log("download complete", file);
-        });
+      let text = await res.text();
+      text = text.replace(/\/\*[\w\W]*?\*\//, "");
+      await fs.promises.writeFile(
+        path.resolve(__dirname, "../test/fixtures", file),
+        text
+      );
+      console.log("download complete", file);
     });
 }
 
