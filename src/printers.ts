@@ -19,7 +19,7 @@ import {
   CommentLine,
   FunctionType
 } from "@creditkarma/thrift-parser";
-const { concat, join, hardline, indent } = prettier.doc.builders;
+const { concat, join, hardline, line, indent, group } = prettier.doc.builders;
 const space = " ";
 const empty = "";
 
@@ -158,11 +158,11 @@ function printStruct(node: StructDefinition, path: FastPath, print: Print) {
   }[node.type];
 
   const fields = path.map(print, "fields");
-  const seperator = fields.length ? hardline : empty; // Empty struct
 
-  return join(seperator, [
+  return concat([
     join(space, [keyword, node.name.value, "{"]),
     ...fields,
+    hardline,
     end
   ]);
 }
@@ -173,9 +173,10 @@ function printField(node: FieldDefinition, path: FastPath, print: Print) {
     // TODO: union
     result = join(space, [result, node.requiredness]);
   }
-  return indent(
+  return concat([
+    indent(hardline),
     join(space, [result, getTextByFieldType(node.fieldType), node.name.value])
-  );
+  ]);
 }
 
 function printAnnotation(node: Annotation) {
