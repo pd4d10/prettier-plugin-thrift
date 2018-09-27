@@ -1,4 +1,4 @@
-import prettier, { FastPath, Doc } from "prettier";
+import prettier, { FastPath, Doc, Options } from "prettier";
 import {
   NamespaceDefinition,
   ConstDefinition,
@@ -48,10 +48,12 @@ function printInclude(node: IncludeDefinition, path: FastPath, print: Print) {
 }
 
 function printEnum(node: EnumDefinition, path: FastPath, print: Print) {
-  return join(hardline, [
+  return concat([
     ...path.map(print, "comments"),
+    hardline,
     join(space, ["enum", node.name.value, "{"]),
     ...path.map(print, "members"),
+    hardline,
     "}"
   ]);
 }
@@ -61,7 +63,7 @@ function printEnumMember(node: EnumMember) {
   if (node.initializer) {
     result = join(space, [result, "=", node.initializer.value.value]);
   }
-  return indent(result);
+  return concat([indent(hardline), result]);
 }
 
 function printTypedef(node: TypedefDefinition) {
@@ -188,25 +190,25 @@ function printAnnotation(node: Annotation) {
 }
 
 function printService(node: ServiceDefinition, path: FastPath, print: Print) {
-  return join(hardline, [
+  return concat([
     join(space, ["service", node.name.value, "{"]),
     ...path.map(print, "functions"),
+    hardline,
     "}"
   ]);
 }
 
 function printFunction(node: FunctionDefinition, path: FastPath, print: Print) {
-  return join(hardline, [
+  return concat([
+    indent(hardline),
     ...path.map(print, "comments"),
-    join(space, [
-      getTextByFieldType(node.returnType),
-      join(empty, [
-        node.name.value,
-        "(",
-        join(space, path.map(print, "fields")),
-        ")"
-      ])
-    ])
+    indent(hardline),
+    getTextByFieldType(node.returnType),
+    space,
+    node.name.value,
+    "(",
+    join(space, path.map(print, "fields")),
+    ")"
   ]);
 }
 
@@ -218,7 +220,7 @@ function printCommentLine(node: CommentLine) {
   return join(space, ["//", node.value]);
 }
 
-function printEntry(path: FastPath, options: any, print: Print) {
+function printEntry(path: FastPath, options: Options, print: Print) {
   // console.log(path);
   const node = path.getValue();
   // console.log(node);
