@@ -22,7 +22,7 @@
     "prettier": "^1.14.3"
   },
   "dependencies": {
-    "@creditkarma/thrift-parser": "^1.1.4"
+    "@creditkarma/thrift-parser": "https://github.com/creditkarma/thrift-parser#9fc8cd6b52e6d90ede9c85a6ba1313afba8b8752"
   },
   "devDependencies": {
     "@types/prettier": "^1.13.2",

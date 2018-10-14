@@ -16,9 +16,13 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@creditkarma/thrift-parser@^1.1.4":
+"@creditkarma/thrift-parser@https://github.com/creditkarma/thrift-parser":
   version "1.1.4"
-  resolved "https://registry.yarnpkg.com/@creditkarma/thrift-parser/-/thrift-parser-1.1.4.tgz#4926d96c4212aef8dce4eac873f6ab27aa52f464"
+  resolved "https://github.com/creditkarma/thrift-parser#5c09121e360b75e04e0178a5a90357977889cb7b"
+
+"@creditkarma/thrift-parser@https://github.com/creditkarma/thrift-parser#9fc8cd6b52e6d90ede9c85a6ba1313afba8b8752":
+  version "1.1.4"
+  resolved "https://github.com/creditkarma/thrift-parser#9fc8cd6b52e6d90ede9c85a6ba1313afba8b8752"
 
 "@types/prettier@^1.13.2":
   version "1.13.2"

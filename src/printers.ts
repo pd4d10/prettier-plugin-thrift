@@ -17,16 +17,42 @@ import {
   UnionDefinition,
   CommentBlock,
   CommentLine,
-  FunctionType
+  FunctionType,
+  ThriftDocument
 } from "@creditkarma/thrift-parser";
 const { concat, join, hardline, line, indent, group } = prettier.doc.builders;
 const space = " ";
-const empty = "";
 
 type Print = (path: FastPath) => Doc;
 
-function printDocument(path: FastPath, print: Print) {
-  return join(concat([hardline, hardline]), path.map(print, "body"));
+function printDocument(
+  node: ThriftDocument,
+  path: FastPath,
+  print: Print
+): Doc {
+  // return concat(
+  //   path.map(subPath => {
+  //     const node = subPath.getValue();
+  //     if (node.type === SyntaxType.NamespaceDefinition) {
+  //       return node;
+  //     } else {
+  //       return concat([hardline, node]);
+  //     }
+  //   }, "body")
+  // );
+
+  // let arr: Doc[] = [];
+  // path.each(subPath => {
+  //   const node = subPath.getValue();
+  //   if (node.type === SyntaxType.NamespaceDefinition) {
+  //     arr.push(node);
+  //   } else {
+  //     arr.push(concat([hardline, node]));
+  //   }
+  // }, "body");
+
+  // return join(hardline, arr);
+  return join(hardline, path.map(print, "body"));
 }
 
 function printNamespace(
@@ -36,7 +62,11 @@ function printNamespace(
 ) {
   return join(hardline, [
     ...path.map(print, "comments"),
-    join(space, ["namespace", node.scope.value, node.name.value])
+    "namespace",
+    space,
+    node.scope.value,
+    space,
+    node.name.value
   ]);
 }
 
@@ -54,7 +84,8 @@ function printEnum(node: EnumDefinition, path: FastPath, print: Print) {
     join(space, ["enum", node.name.value, "{"]),
     ...path.map(print, "members"),
     hardline,
-    "}"
+    "}",
+    hardline
   ]);
 }
 
@@ -66,12 +97,23 @@ function printEnumMember(node: EnumMember) {
   return concat([indent(hardline), result]);
 }
 
-function printTypedef(node: TypedefDefinition) {
-  return join(space, [
+function printTypedef(node: TypedefDefinition, path: FastPath, print: Print) {
+  let result: Doc = join(space, [
     "typedef",
     getTextByFieldType(node.definitionType),
     node.name.value
   ]);
+  if (node.annotations) {
+    result = join(space, [
+      result,
+      concat([
+        "(",
+        join(", ", path.map(print, "annotations", "annotations")),
+        ")"
+      ])
+    ]);
+  }
+  return result;
 }
 
 // https://thrift.apache.org/docs/idl#types
@@ -97,7 +139,7 @@ function getTextByFieldType(node: FunctionType): Doc {
     case SyntaxType.BinaryKeyword:
       return "binary";
     case SyntaxType.MapType:
-      return join(empty, [
+      return concat([
         "map<",
         getTextByFieldType(node.keyType),
         ", ",
@@ -105,9 +147,9 @@ function getTextByFieldType(node: FunctionType): Doc {
         ">"
       ]);
     case SyntaxType.ListType:
-      return join(empty, ["list<", getTextByFieldType(node.valueType), ">"]);
+      return concat(["list<", getTextByFieldType(node.valueType), ">"]);
     case SyntaxType.SetType:
-      return join(empty, ["set<", getTextByFieldType(node.valueType), ">"]);
+      return concat(["set<", getTextByFieldType(node.valueType), ">"]);
     case SyntaxType.Identifier:
       return node.value;
     case SyntaxType.VoidKeyword:
@@ -121,7 +163,7 @@ function getTextByFieldType(node: FunctionType): Doc {
 function getTextByConstType(node: ConstValue): Doc {
   switch (node.type) {
     case SyntaxType.StringLiteral:
-      return join(empty, ['"', node.value, '"']);
+      return concat(['"', node.value, '"']);
     case SyntaxType.IntConstant:
     case SyntaxType.DoubleConstant:
       return node.value.value;
@@ -145,7 +187,7 @@ function printStruct(node: StructDefinition, path: FastPath, print: Print) {
   if (node.annotations) {
     end = join(space, [
       end,
-      join(empty, [
+      concat([
         "(",
         join(", ", path.map(print, "annotations", "annotations")),
         ")"
@@ -165,14 +207,17 @@ function printStruct(node: StructDefinition, path: FastPath, print: Print) {
     join(space, [keyword, node.name.value, "{"]),
     ...fields,
     hardline,
-    end
+    end,
+    hardline
   ]);
 }
 
 function printField(node: FieldDefinition, path: FastPath, print: Print) {
   let result: Doc = node.fieldID.value + ":";
-  if (node.requiredness) {
-    // TODO: union
+  const parentNode = path.getParentNode();
+
+  // union no requiredness
+  if (node.requiredness && parentNode.type !== SyntaxType.UnionDefinition) {
     result = join(space, [result, node.requiredness]);
   }
   return concat([
@@ -194,7 +239,8 @@ function printService(node: ServiceDefinition, path: FastPath, print: Print) {
     join(space, ["service", node.name.value, "{"]),
     ...path.map(print, "functions"),
     hardline,
-    "}"
+    "}",
+    hardline
   ]);
 }
 
@@ -227,7 +273,7 @@ function printEntry(path: FastPath, options: Options, print: Print) {
 
   switch (node.type) {
     case SyntaxType.ThriftDocument:
-      return printDocument(path, print);
+      return printDocument(node, path, print);
     case SyntaxType.NamespaceDefinition:
       return printNamespace(node, path, print);
     case SyntaxType.IncludeDefinition:
@@ -237,7 +283,7 @@ function printEntry(path: FastPath, options: Options, print: Print) {
     case SyntaxType.EnumMember:
       return printEnumMember(node);
     case SyntaxType.TypedefDefinition:
-      return printTypedef(node);
+      return printTypedef(node, path, print);
     case SyntaxType.ConstDefinition:
       return printConst(node);
 
