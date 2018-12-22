@@ -52,7 +52,18 @@ function printDocument(
   // }, "body");
 
   // return join(hardline, arr);
-  return join(hardline, path.map(print, "body"));
+  return join(
+    hardline,
+    path.map((subPath, i) => {
+      const node = subPath.getValue();
+      if (node.type === SyntaxType.NamespaceDefinition) {
+        return print(subPath);
+      } else {
+        return print(subPath);
+      }
+    }, "body")
+    // path.map(node => print(node), "body")
+  );
 }
 
 function printNamespace(
@@ -60,7 +71,7 @@ function printNamespace(
   path: FastPath,
   print: Print
 ) {
-  return join(hardline, [
+  return concat([
     ...path.map(print, "comments"),
     "namespace",
     space,
